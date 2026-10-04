@@ -1,0 +1,49 @@
+{
+  "_id": "junior-angular-frontend",
+  "title": "Junior Angular Frontend Engineer",
+  "description": "Junior frontend role focused on developing structured, responsive web applications using Angular and TypeScript.",
+  "department": "Engineering",
+  "team": "Frontend Engineering",
+  "employment_type": "full-time",
+  "work_mode": "onsite",
+  "experience_level": "junior",
+
+  "responsibilities": [
+    "Develop Angular components and pages",
+    "Build responsive user interfaces",
+    "Integrate applications with backend APIs",
+    "Implement frontend validation and error handling",
+    "Debug and maintain existing applications"
+  ],
+
+  "tech_stack": [
+    "TypeScript",
+    "Angular",
+    "HTML",
+    "CSS",
+    "RxJS",
+    "Git"
+  ],
+
+  "nice_to_have": [
+    "Angular Material",
+    "NgRx",
+    "Jasmine",
+    "REST APIs"
+  ],
+
+  "required_skills": [
+    {"name": "typescript", "weight": 2.0},
+    {"name": "angular", "weight": 2.0},
+    {"name": "html", "weight": 1.0},
+    {"name": "css", "weight": 1.0},
+    {"name": "rxjs", "weight": 0.75}
+  ],
+
+  "min_years": 0.5,
+  "seniority": 1,
+  "w_skills": 0.40,
+  "w_years": 0.25,
+  "w_seniority": 0.20,
+  "w_relevance": 0.15
+}

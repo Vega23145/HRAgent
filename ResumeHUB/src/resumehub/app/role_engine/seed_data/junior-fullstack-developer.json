@@ -1,0 +1,51 @@
+{
+  "_id": "junior-fullstack-developer",
+  "title": "Junior Full-Stack Developer",
+  "description": "Entry-level full-stack role involving both frontend application development and backend API development.",
+  "department": "Engineering",
+  "team": "Product Engineering",
+  "employment_type": "full-time",
+  "work_mode": "hybrid",
+  "experience_level": "junior",
+
+  "responsibilities": [
+    "Develop frontend features",
+    "Build and maintain backend APIs",
+    "Connect frontend applications with backend services",
+    "Work with databases",
+    "Debug issues across the application stack"
+  ],
+
+  "tech_stack": [
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Express.js",
+    "PostgreSQL",
+    "Docker",
+    "Git"
+  ],
+
+  "nice_to_have": [
+    "TypeScript",
+    "Next.js",
+    "Redis",
+    "AWS",
+    "CI/CD"
+  ],
+
+  "required_skills": [
+    {"name": "javascript", "weight": 2.0},
+    {"name": "react", "weight": 1.5},
+    {"name": "nodejs", "weight": 1.5},
+    {"name": "postgresql", "weight": 1.0},
+    {"name": "docker", "weight": 0.75}
+  ],
+
+  "min_years": 0.5,
+  "seniority": 1,
+  "w_skills": 0.40,
+  "w_years": 0.25,
+  "w_seniority": 0.20,
+  "w_relevance": 0.15
+}

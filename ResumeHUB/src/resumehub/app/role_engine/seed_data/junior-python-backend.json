@@ -1,0 +1,47 @@
+{
+  "_id": "junior-python-backend",
+  "title": "Junior Python Backend Engineer",
+  "description": "Entry-level backend role focused on developing APIs and backend services using Python.",
+  "department": "Engineering",
+  "team": "Backend Engineering",
+  "employment_type": "full-time",
+  "work_mode": "hybrid",
+  "experience_level": "junior",
+
+  "responsibilities": [
+    "Develop and maintain REST APIs",
+    "Build backend services using Python",
+    "Work with relational databases",
+    "Write unit tests and debug backend issues",
+    "Participate in code reviews"
+  ],
+
+  "tech_stack": [
+    "Python",
+    "FastAPI",
+    "PostgreSQL",
+    "Docker",
+    "Git"
+  ],
+
+  "nice_to_have": [
+    "SQLAlchemy",
+    "pytest",
+    "Redis",
+    "AWS"
+  ],
+
+  "required_skills": [
+    {"name": "python", "weight": 2.0},
+    {"name": "fastapi", "weight": 1.5},
+    {"name": "postgresql", "weight": 1.0},
+    {"name": "docker", "weight": 1.0}
+  ],
+
+  "min_years": 0.5,
+  "seniority": 1,
+  "w_skills": 0.40,
+  "w_years": 0.25,
+  "w_seniority": 0.20,
+  "w_relevance": 0.15
+}

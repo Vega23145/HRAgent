@@ -1,0 +1,66 @@
+# ==========================================
+# FastAPI / Python Core
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ==========================================
+# Environment Variables & Secrets (CRITICAL)
+# ==========================================
+.env
+.env.*
+!.env.example
+*.env
+
+# ==========================================
+# FastAPI / Databases & Local Storage
+# ==========================================
+# SQLite (commonly used for local FastAPI development)
+*.sqlite3
+*.db
+
+# Local log files
+*.log
+
+# Project-specific uploads/static media (if applicable)
+#/storage/
+#/uploads/
+
+# ==========================================
+# Testing & Code Quality
+# ==========================================
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.black
+*.pdf
+*.docx
+*.docs
+*.doc
+*.lex
+*.latex
+
+# ==========================================
+# Editors & IDEs
+# ==========================================
+# Visual Studio Code
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+
+# Operating System files
+.DS_Store
+Thumbs.db

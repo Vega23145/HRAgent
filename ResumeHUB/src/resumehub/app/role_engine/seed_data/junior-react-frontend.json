@@ -1,0 +1,49 @@
+{
+  "_id": "junior-react-frontend",
+  "title": "Junior React Frontend Engineer",
+  "description": "Entry-level frontend role focused on building responsive and interactive web interfaces using React.",
+  "department": "Engineering",
+  "team": "Frontend Engineering",
+  "employment_type": "full-time",
+  "work_mode": "hybrid",
+  "experience_level": "junior",
+
+  "responsibilities": [
+    "Build reusable React components",
+    "Implement responsive web interfaces",
+    "Integrate frontend applications with APIs",
+    "Fix UI bugs and improve user experience",
+    "Write maintainable frontend code"
+  ],
+
+  "tech_stack": [
+    "JavaScript",
+    "React",
+    "HTML",
+    "CSS",
+    "Git",
+    "REST APIs"
+  ],
+
+  "nice_to_have": [
+    "TypeScript",
+    "Tailwind CSS",
+    "Next.js",
+    "Jest"
+  ],
+
+  "required_skills": [
+    {"name": "javascript", "weight": 2.0},
+    {"name": "react", "weight": 2.0},
+    {"name": "html", "weight": 1.0},
+    {"name": "css", "weight": 1.0},
+    {"name": "rest-api", "weight": 0.75}
+  ],
+
+  "min_years": 0.5,
+  "seniority": 1,
+  "w_skills": 0.40,
+  "w_years": 0.25,
+  "w_seniority": 0.20,
+  "w_relevance": 0.15
+}

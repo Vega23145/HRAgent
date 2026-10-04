@@ -1,0 +1,49 @@
+{
+  "_id": "junior-nodejs-backend",
+  "title": "Junior Node.js Backend Engineer",
+  "description": "Junior backend role focused on building scalable APIs and server-side applications with JavaScript and Node.js.",
+  "department": "Engineering",
+  "team": "Backend Engineering",
+  "employment_type": "full-time",
+  "work_mode": "remote",
+  "experience_level": "junior",
+
+  "responsibilities": [
+    "Develop REST APIs using Node.js",
+    "Implement backend business logic",
+    "Work with databases and data models",
+    "Write tests and fix bugs",
+    "Collaborate with frontend developers"
+  ],
+
+  "tech_stack": [
+    "JavaScript",
+    "Node.js",
+    "Express.js",
+    "PostgreSQL",
+    "Docker",
+    "Git"
+  ],
+
+  "nice_to_have": [
+    "TypeScript",
+    "MongoDB",
+    "Redis",
+    "Jest"
+  ],
+
+  "required_skills": [
+    {"name": "javascript", "weight": 2.0},
+    {"name": "nodejs", "weight": 1.5},
+    {"name": "express", "weight": 1.0},
+    {"name": "postgresql", "weight": 1.0},
+    {"name": "docker", "weight": 0.75}
+  ],
+
+  "min_years": 0.5,
+  "seniority": 1,
+  "w_skills": 0.40,
+  "w_years": 0.25,
+  "w_seniority": 0.20,
+  "w_relevance": 0.15
+}

@@ -1,0 +1,31 @@
+[project]
+name = "resumepipeline"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "VanshSharma5", email = "vanshsharmamzn34@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pillow>=12.3.0",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "pymongo>=4.13",
+    "python-multipart>=0.0.9",
+    "google-genai>=1.0",
+    "pypdf>=4.0",
+    "python-docx>=1.1",
+    "pytesseract>=0.3.13",
+    "pdf2image>=1.17.0",
+]
+
+[dependency-groups]
+dev = ["httpx>=0.27", "pytest>=8"]
+
+[project.scripts]
+resumepipeline = "resumepipeline:main"
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
