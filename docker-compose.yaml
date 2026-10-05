@@ -5,10 +5,59 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: secret_password
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-admin}
     volumes:
       - hragent_mongo_data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mongosh --quiet --username "$$MONGO_INITDB_ROOT_USERNAME" --password "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand('ping').ok" | grep -q 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  resumehub:
+    build:
+      context: ./ResumeHUB
+      dockerfile: Dockerfile
+    container_name: resumehub
+    restart: unless-stopped
+    env_file:
+      - path: ./ResumeHUB/.env
+        required: false
+    environment:
+      HUB_MONGO_URI: ${HUB_MONGO_URI:-mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_INITDB_ROOT_PASSWORD:-admin}@mongodb:27017/?authSource=admin}
+      HUB_RESUME_FILES_DIR: /data/resumes
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    ports:
+      - "${HUB_PORT:-8000}:8000"
+    volumes:
+      - ./data:/data
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  resumepipeline:
+    build:
+      context: ./ResumePipeline
+      dockerfile: Dockerfile
+    container_name: resumepipeline
+    restart: unless-stopped
+    env_file:
+      - path: ./ResumePipeline/.env
+        required: false
+    environment:
+      HUB_MONGO_URI: ${HUB_MONGO_URI:-mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_INITDB_ROOT_PASSWORD:-admin}@mongodb:27017/?authSource=admin}
+      RESUME_DIR: /data/resumes
+      OUT_DIR: /data/out
+      INTERVAL: ${INTERVAL:-3600}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ./data:/data
+    depends_on:
+      mongodb:
+        condition: service_healthy
 
 volumes:
   hragent_mongo_data:
