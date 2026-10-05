@@ -25,15 +25,15 @@ services:
     restart: unless-stopped
     env_file:
       - path: ./ResumeHUB/.env
-        required: false
+        required: true
     environment:
       HUB_MONGO_URI: ${HUB_MONGO_URI:-mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_INITDB_ROOT_PASSWORD:-admin}@mongodb:27017/?authSource=admin}
-      HUB_RESUME_FILES_DIR: /data/resumes
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+      HUB_RESUME_FILES_DIR: /srv/data
+    user: "${HOST_UID:-998}:${HOST_GID:-998}"
     ports:
       - "${HUB_PORT:-8000}:8000"
     volumes:
-      - ./data:/data
+      - ./data:/data:ro
     depends_on:
       mongodb:
         condition: service_healthy
@@ -46,15 +46,15 @@ services:
     restart: unless-stopped
     env_file:
       - path: ./ResumePipeline/.env
-        required: false
+        required: true
     environment:
       HUB_MONGO_URI: ${HUB_MONGO_URI:-mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_INITDB_ROOT_PASSWORD:-admin}@mongodb:27017/?authSource=admin}
-      RESUME_DIR: /data/resumes
-      OUT_DIR: /data/out
+      RESUME_DIR: /srv/data
+      OUT_DIR: /srv/data/out
       INTERVAL: ${INTERVAL:-3600}
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    user: "${HOST_UID:-998}:${HOST_GID:-998}"
     volumes:
-      - ./data:/data
+      - ./data:/srv/data:rw
     depends_on:
       mongodb:
         condition: service_healthy

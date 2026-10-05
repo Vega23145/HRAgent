@@ -23,13 +23,17 @@ FROM python:3.13-slim-bookworm AS runtime
 ENV PATH="/srv/.venv/bin:$PATH" \
     PYTHONPATH="/srv/src" \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    INTERVAL=3600
+    PYTHONUNBUFFERED=1 
 
 WORKDIR /srv
 
 COPY --from=builder /srv/.venv /srv/.venv
 COPY --from=builder /srv/src ./src
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --system \
         --uid 998 \
@@ -38,6 +42,7 @@ RUN useradd --system \
         hub \
     && chown -R hub:hub /srv
 
+
 USER hub
 
-CMD ["sh", "-c", "python -m resumepipeline.resume_pipeline --loop $INTERVAL"]
+CMD ["python", "-m", "resumepipeline.resume_pipeline", "--loop", "3600"]

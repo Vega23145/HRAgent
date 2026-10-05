@@ -17,6 +17,7 @@ ADMIN_CSP = (
     "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
     "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 )
+FRONTEND_ORIGIN = "https://frontend.1shhub.com"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -45,9 +46,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.ctx = ctx
 
-    if settings.cors_origins:
+    cors_origins = list(dict.fromkeys([*settings.cors_origins, FRONTEND_ORIGIN]))
+    if cors_origins:
         app.add_middleware(
-            CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=False,
+            CORSMiddleware, allow_origins=cors_origins, allow_credentials=False,
             allow_methods=["*"], allow_headers=["Authorization", "Content-Type"],
         )
 
