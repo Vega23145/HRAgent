@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Svelte / SvelteKit Build Artifacts
+.svelte-kit/
+build/
+dist/
+
+# Docker Configuration (Prevents copying config into the image layers)
+Dockerfile
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Version Control & IDEs
+.git
+.gitignore
+.gitattributes
+.github/
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Secrets and Local Environments
+.env
+.env.*
+!.env.example
+secrets.json
+
+# Tests & Documentation
+tests/
+e2e/
+coverage/
+README.md
+LICENSE
