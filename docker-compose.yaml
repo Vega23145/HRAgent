@@ -59,6 +59,18 @@ services:
       mongodb:
         condition: service_healthy
 
+  bareui:
+    build:
+      context: ./BareUI
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    container_name: bareui
+    restart: unless-stopped
+    ports:
+      - "${BAREUI_PORT:-3000}:80"
+
+
 volumes:
   hragent_mongo_data:
     external: true
