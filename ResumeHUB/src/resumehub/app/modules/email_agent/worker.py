@@ -41,6 +41,7 @@ async def _send_one(
         "candidate_email": email,
         "action":          action,
         "role_id":         role.get("_id", ""),
+        "task_id":         extra_ctx.get("task_id"),
         "sent_at":         utcnow(),
         "status":          "sent",
         "error":           None,
@@ -75,6 +76,21 @@ async def _send_one(
         result["status"] = "failed"
         result["error"]  = str(exc)[:500]
         log.error("email failed for %s: %s", candidate["_id"], exc)
+
+    result["sent_at"] = utcnow()
+    history_entry = {
+        key: result[key]
+        for key in ("job_id", "action", "role_id", "task_id", "sent_at", "status", "dry_run", "subject")
+    }
+    update: dict[str, Any] = {
+        "$push": {"email_history": {"$each": [history_entry], "$sort": {"sent_at": 1}}}
+    }
+    if action == "rejected" and result["status"] == "sent" and not cfg.dry_run:
+        update["$set"] = {"status": "rejected"}
+    try:
+        await db.resumes().update_one({"_id": candidate["_id"]}, update)
+    except Exception:
+        log.exception("could not update email history for %s", candidate["_id"])
 
     await _emails().insert_one(result)
     return result

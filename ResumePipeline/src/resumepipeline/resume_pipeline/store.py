@@ -11,7 +11,9 @@ from .config import Config
 
 class Store(Protocol):
     def has(self, key: str) -> bool: ...
+    def get(self, key: str) -> dict | None: ...
     def save(self, key: str, record: dict) -> None: ...  # idempotent upsert
+    def log_rejection(self, job: dict, email_log: dict) -> None: ...
     def keys(self) -> set[str]: ...
     def close(self) -> None: ...
 
@@ -34,8 +36,19 @@ class MongoStore:
     def has(self, key: str) -> bool:
         return self._col.find_one({"_id": key}, {"_id": 1}) is not None
 
+    def get(self, key: str) -> dict | None:
+        document = self._col.find_one({"_id": key})
+        if document is not None:
+            document.pop("_id", None)
+        return document
+
     def save(self, key: str, record: dict) -> None:
         self._col.replace_one({"_id": key}, {"_id": key, **record}, upsert=True)
+
+    def log_rejection(self, job: dict, email_log: dict) -> None:
+        database = self._col.database
+        database["email_jobs"].replace_one({"_id": job["_id"]}, job, upsert=True)
+        database["email_log"].replace_one({"_id": email_log["_id"]}, email_log, upsert=True)
 
     def keys(self) -> set[str]:
         return {d["_id"] for d in self._col.find({}, {"_id": 1})}
@@ -55,10 +68,25 @@ class JsonDirStore:
     def has(self, key: str) -> bool:
         return (self.dir / f"{key}.json").is_file()
 
+    def get(self, key: str) -> dict | None:
+        path = self.dir / f"{key}.json"
+        if not path.is_file():
+            return None
+        return json.loads(path.read_text())
+
     def save(self, key: str, record: dict) -> None:
         tmp = self.dir / f"{key}.json.tmp"
         tmp.write_text(json.dumps(record, indent=2, ensure_ascii=False))
         os.replace(tmp, self.dir / f"{key}.json")
+
+    def log_rejection(self, job: dict, email_log: dict) -> None:
+        for collection, document in (("email_jobs", job), ("email_log", email_log)):
+            directory = self.dir / collection
+            directory.mkdir(parents=True, exist_ok=True)
+            path = directory / f"{document['_id']}.json"
+            tmp = path.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(document, indent=2, ensure_ascii=False, default=str))
+            os.replace(tmp, path)
 
     def keys(self) -> set[str]:
         return {p.stem for p in self.dir.glob("*.json")}

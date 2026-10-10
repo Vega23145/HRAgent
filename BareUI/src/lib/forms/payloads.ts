@@ -1,4 +1,5 @@
 import type { ApiRecord, ResourceDefinition } from '../types'
+import { resumeEntryFields, type ResumeEntrySection } from './resumeEntries'
 
 function words(form: FormData, name: string) {
   return String(form.get(name) ?? '').split(',').map((item) => item.trim()).filter(Boolean)
@@ -8,12 +9,25 @@ function lines(form: FormData, name: string) {
   return String(form.get(name) ?? '').split('\n').map((item) => item.trim()).filter(Boolean)
 }
 
-function jsonArray(form: FormData, name: string) {
-  const raw = String(form.get(name) ?? '').trim()
-  if (!raw) return []
-  const parsed: unknown = JSON.parse(raw)
-  if (!Array.isArray(parsed)) throw new Error(`${name} must be a JSON array.`)
-  return parsed
+function resumeEntries(form: FormData, section: ResumeEntrySection, previous: unknown) {
+  const prefix = new RegExp(`^${section}_(\\d+)_`)
+  const indices = [...form.keys()].flatMap((key) => {
+    const match = key.match(prefix)
+    return match ? [Number(match[1])] : []
+  })
+  const uniqueIndices = [...new Set(indices)].sort((left, right) => left - right)
+  const previousEntries = Array.isArray(previous) ? previous : []
+  return uniqueIndices.flatMap((index) => {
+    const sourceIndex = Number(form.get(`${section}_${index}_source_index`))
+    const oldEntry = Number.isInteger(sourceIndex) && sourceIndex >= 0 ? previousEntries[sourceIndex] : undefined
+    const entry = oldEntry && typeof oldEntry === 'object' && !Array.isArray(oldEntry) ? oldEntry as ApiRecord : {}
+    const values = Object.fromEntries(resumeEntryFields[section].map((field) => {
+      const raw = String(form.get(`${section}_${index}_${field.name}`) ?? '').trim()
+      return [field.name, field.list ? raw.split('\n').map((line) => line.trim()).filter(Boolean) : raw]
+    }))
+    if (Object.values(values).every((value) => Array.isArray(value) ? value.length === 0 : !value)) return []
+    return [{ ...entry, ...values }]
+  })
 }
 
 export function createResourcePayload(resource: ResourceDefinition, form: FormData, existing?: ApiRecord): Record<string, unknown> | null {
@@ -25,7 +39,8 @@ export function createResourcePayload(resource: ResourceDefinition, form: FormDa
         return { name: String(value).trim(), weight: Number(form.get(`skill_weight_${index}`)) }
       })
     return {
-      _id: form.get('id'), title: form.get('title'), department: form.get('department') || null,
+      ...existing,
+      _id: existing?._id ?? form.get('id'), title: form.get('title'), department: form.get('department') || null,
       team: form.get('team') || null, employment_type: form.get('employment_type'), work_mode: form.get('work_mode'),
       experience_level: form.get('experience_level'), description: form.get('description') || '',
       responsibilities: lines(form, 'responsibilities'), tech_stack: words(form, 'tech_stack'),
@@ -58,10 +73,6 @@ export function createResourcePayload(resource: ResourceDefinition, form: FormDa
     const previousResume = existing?.resume && typeof existing.resume === 'object' ? existing.resume as ApiRecord : {}
     const previousContact = existing?.contact && typeof existing.contact === 'object' ? existing.contact as ApiRecord : {}
     const previousEmail = existing?.email && typeof existing.email === 'object' ? existing.email as ApiRecord : {}
-    const resumeArray = (name: string, previous: string) => {
-      const raw = String(form.get(name) ?? '').trim()
-      return raw ? jsonArray(form, name) : previousResume[previous] ?? []
-    }
     const emails = words(form, 'emails')
     const phones = words(form, 'phones')
     const urls = words(form, 'urls')
@@ -87,8 +98,10 @@ export function createResourcePayload(resource: ResourceDefinition, form: FormDa
         name: form.get('name') || previousResume.name || null,
         summary: form.get('summary') || previousResume.summary || null,
         skills: skillItems.length ? [{ category: 'General', items: skillItems }] : previousResume.skills ?? [],
-        experience: resumeArray('experience', 'experience'), education: resumeArray('education', 'education'),
-        projects: resumeArray('projects', 'projects'), certifications: resumeArray('certifications', 'certifications'),
+        experience: resumeEntries(form, 'experience', previousResume.experience),
+        education: resumeEntries(form, 'education', previousResume.education),
+        projects: resumeEntries(form, 'projects', previousResume.projects),
+        certifications: resumeEntries(form, 'certifications', previousResume.certifications),
         interests: words(form, 'interests').length ? words(form, 'interests') : previousResume.interests ?? [],
       },
     }

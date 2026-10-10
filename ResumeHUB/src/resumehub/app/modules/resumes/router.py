@@ -63,13 +63,25 @@ def _reject_managed(data: dict) -> None:
 
 
 def _summary(doc: dict, pii: bool) -> dict:
+    resume = doc.get("resume") or {}
+    matches = doc.get("match") or {}
     out = {
         "_id": doc["_id"],
-        "name": (doc.get("resume") or {}).get("name"),
+        "status": doc.get("status"),
+        "name": resume.get("name"),
         "subject": (doc.get("email") or {}).get("subject"),
         "date": (doc.get("email") or {}).get("date"),
         "resume_file": doc.get("resume_file"),
-        "scores": {r: m.get("score") for r, m in (doc.get("match") or {}).items() if isinstance(m, dict)},
+        "email_history": [
+            {key: entry.get(key) for key in ("action", "sent_at", "status", "role_id", "task_id")}
+            for entry in doc.get("email_history", [])
+        ],
+        "resume": {
+            "skills": resume.get("skills", []),
+            "experience": resume.get("experience", []),
+        },
+        "match": matches,
+        "scores": {r: m.get("score") for r, m in matches.items() if isinstance(m, dict)},
     }
     if pii:
         out["sender"] = (doc.get("email") or {}).get("sender")
@@ -83,6 +95,7 @@ async def list_resumes(
     role: Annotated[str | None, Query(pattern=SLUG_PATTERN)] = None,
     min_score: float | None = Query(None, ge=0, le=100),
     has_match: bool | None = None,
+    status: str | None = Query(None, max_length=40),
     sort: Literal["_id", "name", "-name", "score", "-score"] = "_id",
     p: Page = Depends(pagination),
     actor: Principal = Depends(require("resumes:read")),
@@ -103,6 +116,8 @@ async def list_resumes(
         filt[f"match.{role}.score"] = {"$gte": min_score}
     if has_match is not None:
         filt["match"] = {"$exists": True, "$ne": {}} if has_match else {"$in": [None, {}]}
+    if status:
+        filt["status"] = status
 
     spec = {
         "_id": [("_id", 1)],
@@ -111,7 +126,12 @@ async def list_resumes(
         "score": [(f"match.{role}.score", 1), ("_id", 1)],
         "-score": [(f"match.{role}.score", -1), ("_id", 1)],
     }[sort]
-    proj = {"resume.name": 1, "email.subject": 1, "email.date": 1, "email.sender": 1, "resume_file": 1, "match": 1}
+    proj = {
+        "resume.name": 1, "resume.skills": 1, "resume.experience": 1,
+        "email.subject": 1, "email.date": 1, "email.sender": 1,
+        "resume_file": 1, "match": 1, "email_history": 1,
+        "status": 1,
+    }
     total = await db.resumes().count_documents(filt)
     docs = await db.resumes().find(filt, proj).sort(spec).skip(p.skip).limit(p.size).to_list()
     return paged([_summary(d, pii) for d in docs], total, p)
@@ -190,10 +210,21 @@ async def patch_resume(
 @router.delete("/{resume_id}", status_code=204)
 async def delete_resume(resume_id: str, request: Request, actor: Principal = Depends(require("resumes:delete"))):
     _check_id(resume_id)
+    doc = await db.resumes().find_one({"_id": resume_id}, {"resume_file": 1})
+    if not doc:
+        raise HTTPException(404, "Resume not found")
     res = await db.resumes().delete_one({"_id": resume_id})
     if res.deleted_count == 0:
         raise HTTPException(404, "Resume not found")
-    await audit(actor, "resumes.delete", "resumes", resume_id, request=request)
+    submissions = await db.get_db()["task_submissions"].delete_many({"candidate_id": resume_id})
+    base = get_settings().resume_files_dir
+    if base and doc.get("resume_file"):
+        root = FsPath(base).resolve()
+        path = (root / doc["resume_file"]).resolve()
+        if path.is_relative_to(root) and path.is_file():
+            path.unlink()
+    await audit(actor, "resumes.delete", "resumes", resume_id,
+                {"task_submissions_deleted": submissions.deleted_count}, request)
     return Response(status_code=204)
 
 

@@ -9,9 +9,10 @@ from pydantic import BaseModel, Field
 from resumehub.app.core import db
 from resumehub.app.core.audit import audit
 from resumehub.app.core.deps import Page, Principal, paged, pagination, require
-from resumehub.app.core.utils import SLUG_PATTERN, utcnow
+from resumehub.app.core.utils import SLUG_PATTERN, jsonable, utcnow
 
 from .renderer import ACTION_TEMPLATES, list_templates
+from .config import get_email_settings
 from .worker import _emails, _jobs, execute_job
 
 router = APIRouter()
@@ -28,8 +29,7 @@ async def _create_job(
 ) -> dict:
     if not candidate_ids:
         raise HTTPException(422, "No candidates matched the filter")
-    cfg_import = __import__("email_agent.config", fromlist=["get_email_settings"])
-    cfg = cfg_import.get_email_settings()
+    cfg = get_email_settings()
     if len(candidate_ids) > cfg.max_bulk:
         raise HTTPException(422, f"Batch exceeds max_bulk={cfg.max_bulk}; narrow your filter")
 
@@ -146,6 +146,7 @@ async def _build_extra_ctx(action: str, task_id, subject, body_text) -> dict:
     if action == "task_assigned":
         if not task_id:
             raise HTTPException(422, "task_id is required for action=task_assigned")
+        ctx["task_id"] = task_id
         task = await db.get_db()["hiring_tasks"].find_one({"_id": task_id})
         if not task:
             raise HTTPException(404, f"Hiring task '{task_id}' not found")
@@ -200,7 +201,7 @@ async def job_log(
         filt["status"] = status
     total = await _emails().count_documents(filt)
     cur   = _emails().find(filt).sort("sent_at", -1).skip(p.skip).limit(p.size)
-    return paged(await cur.to_list(), total, p)
+    return paged(jsonable(await cur.to_list()), total, p)
 
 
 @router.delete("/jobs/{job_id}", status_code=204)

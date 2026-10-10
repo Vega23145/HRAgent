@@ -3,7 +3,9 @@
   import type { ResourceDefinition } from '../types'
   import FormField from './FormField.svelte'
   import FormTextArea from './FormTextArea.svelte'
+  import ResumeEntriesEditor from './ResumeEntriesEditor.svelte'
   import RequiredSkillsEditor from './RequiredSkillsEditor.svelte'
+  import RoleSelect from './RoleSelect.svelte'
   import { displayValue, getPath } from '../format'
   import type { ApiRecord } from '../types'
 
@@ -25,40 +27,56 @@
     if (!Array.isArray(value)) return ''
     return value.map((item) => typeof item === 'object' && item !== null ? String((item as ApiRecord).name ?? '') : String(item)).filter(Boolean).join(', ')
   }
-  function jsonField(path: string) {
+  function entryRecords(path: string) {
     const value = record ? getPath(record, path) : undefined
-    return Array.isArray(value) && value.length ? JSON.stringify(value, null, 2) : ''
+    if (!Array.isArray(value)) return []
+    return value.filter((item): item is ApiRecord => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
   }
+  function commaField(path: string) {
+    const value = record ? getPath(record, path) : undefined
+    if (!Array.isArray(value)) return ''
+    return value.map((item) => typeof item === 'object' && item !== null ? String((item as ApiRecord).name ?? '') : String(item)).filter(Boolean).join(', ')
+  }
+  const initialRoleSkills = $derived.by(() => {
+    const value = record?.required_skills
+    return Array.isArray(value) ? value.flatMap((item) => {
+      if (!item || typeof item !== 'object') return []
+      const skill = item as ApiRecord
+      return typeof skill.name === 'string' ? [{ name: skill.name, weight: Number(skill.weight) || 1 }] : []
+    }) : []
+  })
 </script>
 
 <div class="modal-backdrop" role="presentation" onclick={(event) => { if (event.target === event.currentTarget) onClose() }}>
-  <dialog open class="modal" aria-labelledby="dialog-title">
+  <dialog open class="modal" class:role-form-modal={kind === 'role'} aria-labelledby="dialog-title">
     <div class="modal-head"><h2 id="dialog-title">{record ? 'Edit' : 'Create'} {resource.noun}</h2><button class="icon-button" onclick={onClose} aria-label="Close"><X size={16} /></button></div>
     <form class="form" onsubmit={(event) => onSubmit(event, event.currentTarget as HTMLFormElement)}>
       {#if kind === 'role'}
-        <FormField id="role-id" name="id" label="Role ID" required placeholder="senior-engineer" />
-        <FormField id="role-title" name="title" label="Title" required maxlength={200} />
-        <FormField id="department" name="department" label="Department" />
-        <FormField id="role-team" name="team" label="Team" />
-        <FormField id="employment-type" name="employment_type" label="Employment type" value="full-time" />
-        <FormField id="work-mode" name="work_mode" label="Work mode" value="onsite" />
-        <FormField id="experience-level" name="experience_level" label="Experience level" value="junior" />
-        <FormTextArea id="role-description" name="description" label="Description" />
-        <FormTextArea id="responsibilities" name="responsibilities" label="Responsibilities, one per line" />
-        <FormField id="tech-stack" name="tech_stack" label="Tech stack, comma separated" />
-        <RequiredSkillsEditor />
-        <FormField id="nice-to-have" name="nice_to_have" label="Nice to have, comma separated" />
+        <div class="role-form-grid">
+          <FormField id="role-id" name="id" label="Role ID" required placeholder="senior-engineer" value={field('_id')} disabled={Boolean(record)} />
+          <FormField id="role-title" name="title" label="Title" required maxlength={200} value={field('title')} />
+          <FormField id="department" name="department" label="Department" value={field('department')} />
+          <FormField id="role-team" name="team" label="Team" value={field('team')} />
+          <FormField id="employment-type" name="employment_type" label="Employment type" value={field('employment_type', 'full-time')} />
+          <FormField id="work-mode" name="work_mode" label="Work mode" value={field('work_mode', 'onsite')} />
+          <FormField id="experience-level" name="experience_level" label="Experience level" value={field('experience_level', 'junior')} />
+          <FormField id="min-years" name="min_years" label="Minimum years experience" type="number" min="0" step="0.5" value={field('min_years', '0')} />
+          <FormField id="seniority" name="seniority" label="Seniority level" type="number" min="0" value={field('seniority', '1')} />
+          <FormField id="tech-stack" name="tech_stack" label="Tech stack, comma separated" value={commaField('tech_stack')} />
+          <FormField id="nice-to-have" name="nice_to_have" label="Nice to have, comma separated" value={commaField('nice_to_have')} />
+        </div>
+        <FormTextArea id="role-description" name="description" label="Description" value={field('description')} />
+        <FormTextArea id="responsibilities" name="responsibilities" label="Responsibilities, one per line" value={Array.isArray(record?.responsibilities) ? record.responsibilities.map(String).join('\n') : ''} />
+        <RequiredSkillsEditor initialSkills={initialRoleSkills} />
         <div class="form-section-title">Scoring configuration</div>
-        <FormField id="min-years" name="min_years" label="Minimum years experience" type="number" min="0" value="0" />
-        <FormField id="seniority" name="seniority" label="Seniority level" type="number" min="0" value="1" />
         <div class="weight-grid">
-          <FormField id="w-skills" name="w_skills" label="Skills weight" type="number" min="0" max="1" step="0.01" value="0.4" />
-          <FormField id="w-years" name="w_years" label="Years weight" type="number" min="0" max="1" step="0.01" value="0.25" />
-          <FormField id="w-seniority" name="w_seniority" label="Seniority weight" type="number" min="0" max="1" step="0.01" value="0.2" />
-          <FormField id="w-relevance" name="w_relevance" label="Relevance weight" type="number" min="0" max="1" step="0.01" value="0.15" />
+          <FormField id="w-skills" name="w_skills" label="Skills weight" type="number" min="0" max="1" step="0.01" value={field('w_skills', '0.4')} />
+          <FormField id="w-years" name="w_years" label="Years weight" type="number" min="0" max="1" step="0.01" value={field('w_years', '0.25')} />
+          <FormField id="w-seniority" name="w_seniority" label="Seniority weight" type="number" min="0" max="1" step="0.01" value={field('w_seniority', '0.2')} />
+          <FormField id="w-relevance" name="w_relevance" label="Relevance weight" type="number" min="0" max="1" step="0.01" value={field('w_relevance', '0.15')} />
         </div>
       {:else if kind === 'task'}
-        <FormField id="task-role" name="role_id" label="Role ID" required />
+        <RoleSelect id="task-role" name="role_id" label="Role ID" required />
         <FormField id="task-title" name="title" label="Title" required maxlength={200} />
         <FormTextArea id="task-description" name="description" label="Description" required maxlength={5000} />
         <FormTextArea id="task-instructions" name="instructions" label="Instructions for the candidate" maxlength={5000} />
@@ -88,17 +106,17 @@
         <FormField id="resume-subject" name="subject" label="Source email subject" value={field('email.subject')} />
         <FormField id="resume-message-id" name="message_id" label="Email message ID" value={field('email.message_id')} />
         <FormField id="resume-date" name="date" label="Email date" type="text" value={field('email.date')} />
-        <FormField id="resume-file" name="resume_file" label="Resume file name" placeholder="candidate-resume.pdf" value={field('resume_file')} />
+        <!-- <FormField id="resume-file" name="resume_file" label="Resume file name" placeholder="candidate-resume.pdf" value={field('resume_file')} /> -->
         <FormField id="resume-emails" name="emails" label="Contact emails, comma separated" value={listField('contact.emails')} />
         <FormField id="resume-phones" name="phones" label="Contact phones, comma separated" value={listField('contact.phones')} />
         <FormField id="resume-urls" name="urls" label="Contact URLs, comma separated" value={listField('contact.urls')} />
         <FormTextArea id="resume-body" name="body" label="Original resume text" value={field('body')} />
         <FormTextArea id="resume-summary" name="summary" label="Summary" value={field('resume.summary', field('summary'))} />
         <FormField id="resume-skills" name="skills" label="Skills, comma separated" value={listField('resume.skills')} />
-        <FormTextArea id="resume-experience" name="experience" label="Experience entries (JSON array)" value={jsonField('resume.experience')} />
-        <FormTextArea id="resume-education" name="education" label="Education entries (JSON array)" value={jsonField('resume.education')} />
-        <FormTextArea id="resume-projects" name="projects" label="Projects (JSON array)" value={jsonField('resume.projects')} />
-        <FormTextArea id="resume-certifications" name="certifications" label="Certifications (JSON array)" value={jsonField('resume.certifications')} />
+        <ResumeEntriesEditor section="experience" label="Experience" initialEntries={entryRecords('resume.experience')} />
+        <ResumeEntriesEditor section="education" label="Education" initialEntries={entryRecords('resume.education')} />
+        <ResumeEntriesEditor section="projects" label="Projects" initialEntries={entryRecords('resume.projects')} />
+        <ResumeEntriesEditor section="certifications" label="Certifications" initialEntries={entryRecords('resume.certifications')} />
         <FormField id="resume-interests" name="interests" label="Interests, comma separated" value={listField('resume.interests')} />
       {/if}
       <div class="modal-actions"><button class="button" type="button" onclick={onClose}>Cancel</button><button class="button primary" type="submit" disabled={busy}>{busy ? 'Saving…' : record ? 'Save changes' : 'Create'}</button></div>

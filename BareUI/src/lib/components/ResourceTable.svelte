@@ -2,6 +2,7 @@
   import { ArrowLeft, ArrowRight, Search, ScanEye, Eye } from '@lucide/svelte'
   import type { ApiRecord, ResourceDefinition } from '../types'
   import { displayValue, getPath } from '../format'
+  import RoleSelect from './RoleSelect.svelte'
 
   let {
     resource,
@@ -40,7 +41,9 @@
     <div class="filters">
       <label class="searchbox"><Search size={15} /><input class="input" placeholder={`Search ${resource.label.toLowerCase()}…`} aria-label={`Search ${resource.label}`} value={filters.q ?? ''} oninput={(event) => onFilter('q', event.currentTarget.value)} /></label>
       {#each resource.filters ?? [] as filter (filter.name)}
-        {#if filter.type === 'select'}
+        {#if filter.name === 'role'}
+          <RoleSelect id="resume-role-filter" name="role" label="Role" includeBlank blankLabel="All roles" value={filters[filter.name] ?? ''} onChange={(value) => onFilter(filter.name, value)} />
+        {:else if filter.type === 'select'}
           <select class="select extra-filter" aria-label={filter.label} value={filters[filter.name] ?? ''} onchange={(event) => onFilter(filter.name, event.currentTarget.value)}>
             <option value="">{filter.label}</option>
             {#each filter.options ?? [] as option}<option value={option}>{option}</option>{/each}
@@ -58,5 +61,5 @@
       <tr>{#each resource.columns as column (column.path)}{@const raw = [column.path, ...(column.alternatives ?? [])].map((path) => getPath(record, path)).find((value) => value !== undefined && value !== null && value !== '')}<td><span class="cell-value" title={displayValue(raw)}>{displayValue(raw)}</span></td>{/each}<td><button class="icon-button" onclick={() => onSelect(record)} aria-label={`Inspect ${resource.noun}`} title="Inspect full record"><ScanEye size={15} /></button></td>{#if onPreview}<td><button class="icon-button" onclick={() => onPreview?.(record)} aria-label="Preview email template" title="Preview template"><Eye size={15} /></button></td>{/if}</tr>
     {/each}
   </tbody></table></div>{/if}
-  <footer class="table-footer"><span>Showing {total ? (page - 1) * size + 1 : 0}–{Math.min(page * size, total)} of {total}</span><div class="pagination"><label for="page-size">Rows</label><select class="select" id="page-size" value={size} onchange={(event) => onSize(Number(event.currentTarget.value))}><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option></select><button onclick={() => onPage(page - 1)} disabled={page <= 1} aria-label="Previous page"><ArrowLeft size={14} /></button><span>{page} / {pageCount}</span><button onclick={() => onPage(page + 1)} disabled={page >= pageCount} aria-label="Next page"><ArrowRight size={14} /></button></div></footer>
+  <!-- <footer class="table-footer"><span>Showing {total ? (page - 1) * size + 1 : 0}–{Math.min(page * size, total)} of {total}</span><div class="pagination"><label for="page-size">Rows</label><select class="select" id="page-size" value={size} onchange={(event) => onSize(Number(event.currentTarget.value))}><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option></select><button onclick={() => onPage(page - 1)} disabled={page <= 1} aria-label="Previous page"><ArrowLeft size={14} /></button><span>{page} / {pageCount}</span><button onclick={() => onPage(page + 1)} disabled={page >= pageCount} aria-label="Next page"><ArrowRight size={14} /></button></div></footer> -->
 </section>

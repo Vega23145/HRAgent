@@ -12,6 +12,7 @@
     max,
     step,
     value,
+    disabled = false,
   }: {
     id: string
     name: string
@@ -25,10 +26,11 @@
     max?: number | string
     step?: number | string
     value?: string
+    disabled?: boolean
   } = $props()
 </script>
 
 <div class="field">
   <label for={id}>{label}</label>
-  <input class="input" {id} {name} {type} {placeholder} {required} {maxlength} {minlength} {min} {max} {step} {value} />
+  <input class="input" {id} {name} {type} {placeholder} {required} {maxlength} {minlength} {min} {max} {step} {value} {disabled} />
 </div>

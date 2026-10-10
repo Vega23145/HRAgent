@@ -1,7 +1,8 @@
-const DEFAULT_API_BASE = import.meta.env.PROD ? 'https://dev.1shhub.com' : 'http://localhost:8000'
+const DEFAULT_API_BASE = import.meta.env.PROD ? 'http://localhost:8000' : 'http://localhost:8000'
 const configuredApiBase = import.meta.env.VITE_API_URL
 const useProductionDefault = import.meta.env.PROD && (!configuredApiBase || /localhost|127\.0\.0\.1/.test(configuredApiBase))
-const API_BASE = (useProductionDefault ? DEFAULT_API_BASE : configuredApiBase ?? DEFAULT_API_BASE).replace(/\/$/, '')
+const DIRECT_API_BASE = (useProductionDefault ? DEFAULT_API_BASE : configuredApiBase ?? DEFAULT_API_BASE).replace(/\/$/, '')
+const API_BASE = DIRECT_API_BASE
 const TOKEN_KEY = 'resume-hub-access-token'
 const REFRESH_KEY = 'resume-hub-refresh-token'
 
@@ -48,7 +49,7 @@ async function readResponse(response: Response): Promise<unknown> {
   if (contentType.includes('application/json')) {
     try { return JSON.parse(body) as unknown } catch { return body }
   }
-  return body
+  return body 3AW
 }
 
 function errorMessage(data: unknown, status: number) {
@@ -110,5 +111,5 @@ export function queryString(values: Record<string, string | number | boolean | u
 }
 
 export function getApiBase() {
-  return API_BASE || window.location.origin
+  return DIRECT_API_BASE || window.location.origin
 }

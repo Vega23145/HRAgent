@@ -1,13 +1,20 @@
 {
   "name": "bareui",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
+  "description": "This template should help get you started developing with Svelte and TypeScript in Vite.",
+  "license": "ISC",
+  "author": "",
   "type": "module",
+  "main": "svelte.config.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "@lucide/svelte": "^1.52.0"
   },
   "devDependencies": {
     "@skeletonlabs/skeleton": "^5.0.1",
@@ -22,8 +29,5 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
-  },
-  "dependencies": {
-    "@lucide/svelte": "^1.52.0"
   }
 }

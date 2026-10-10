@@ -16,8 +16,29 @@ export function displayValue(value: unknown): string {
   return String(value)
 }
 
+export type RequiredSkillSummary = { name: string; weight: number | null }
+
+export function formatRequiredSkills(value: unknown): RequiredSkillSummary[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((skill) => {
+    if (typeof skill === 'string') return [{ name: skill, weight: null }]
+    if (!skill || typeof skill !== 'object') return []
+    const record = skill as ApiRecord
+    const name = typeof record.name === 'string' ? record.name.trim() : ''
+    if (!name) return []
+    const weight = typeof record.weight === 'number' ? record.weight : Number(record.weight)
+    return [{ name, weight: Number.isFinite(weight) ? weight : null }]
+  })
+}
+
+export function formatRoleWeight(value: unknown) {
+  const weight = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(weight) ? `${Math.round(weight * 100)}%` : '—'
+}
+
 export type CandidateSummary = {
   id: string
+  status: string
   name: string
   email: string
   headline: string
@@ -31,6 +52,7 @@ export type CandidateSummary = {
   certifications: { name: string; issuer: string; score: string }[]
   interests: string[]
   matches: { role: string; score: string; scoreValue: number; matchedSkills: string[]; missingSkills: string[]; details: string }[]
+  emailHistory: { jobId: string; action: string; label: string; roleId: string; taskId: string; sentAt: string; status: string; dryRun: boolean }[]
   bestMatch: { role: string; score: string; scoreValue: number; matchedSkills: string[]; missingSkills: string[] } | null
   received: string
   file: string
@@ -117,7 +139,7 @@ export function formatCandidate(record: ApiRecord): CandidateSummary {
   const education = entries(resume.education ?? record.education)
   const projects = entries(resume.projects ?? record.projects)
   const certifications = entries(resume.certifications ?? record.certifications)
-  const rawMatches = record.match ?? record.matches ?? {}
+  const rawMatches = record.match ?? record.matches ?? record.scores ?? {}
   const formatScore = (value: unknown) => {
     const scoreValue = typeof value === 'number' ? value : Number(value)
     return Number.isFinite(scoreValue) ? `${scoreValue.toFixed(1).replace(/\.0$/, '')}%` : ''
@@ -136,13 +158,29 @@ export function formatCandidate(record: ApiRecord): CandidateSummary {
   }
   const matches = Array.isArray(rawMatches)
     ? rawMatches.map((match, index) => {
-        const item = recordValue(match)
-        return matchData(text(item, 'role_id', 'role', 'title') || `Role ${index + 1}`, item, undefined)
-      })
+      const item = recordValue(match)
+      return matchData(text(item, 'role_id', 'role', 'title') || `Role ${index + 1}`, item, undefined)
+    })
     : Object.entries(recordValue(rawMatches)).map(([role, value]) => {
-        const item = recordValue(value)
-        return matchData(role, item, typeof value === 'number' ? value : undefined)
-      })
+      const item = recordValue(value)
+      return matchData(role, item, typeof value === 'number' ? value : undefined)
+    })
+  const emailActionLabels: Record<string, string> = {
+    interview: 'Interview', task_assigned: 'Task assigned', rejected: 'Rejected', hired: 'Hired', custom: 'Custom',
+  }
+  const emailHistory = entries(record.email_history).map((item) => {
+    const action = text(item, 'action')
+    return {
+      jobId: text(item, 'job_id'),
+      action,
+      label: emailActionLabels[action] ?? (action || 'Email'),
+      roleId: text(item, 'role_id'),
+      taskId: text(item, 'task_id'),
+      sentAt: text(item, 'sent_at'),
+      status: text(item, 'status') || 'unknown',
+      dryRun: item.dry_run === true,
+    }
+  }).sort((left, right) => Date.parse(left.sentAt) - Date.parse(right.sentAt))
   const scoredMatches = matches.filter((match) => match.scoreValue >= 0).sort((left, right) => right.scoreValue - left.scoreValue)
   const bestMatch = scoredMatches[0] ?? null
   const skills = asStrings(resume.skills ?? record.skills)
@@ -151,9 +189,10 @@ export function formatCandidate(record: ApiRecord): CandidateSummary {
 
   return {
     id: text(record, '_id', 'id') || text(resume, '_id', 'id'),
+    status: text(record, 'status'),
     name: text(resume, 'name') || text(record, 'name', 'candidate_name', 'full_name') || 'Unnamed candidate',
-    email: text(email, 'sender') || asStrings(contact.emails)[0] || text(record, 'email_address'),
-    headline: text(record, 'headline', 'title', 'current_title') || text(experience[0] ?? {}, 'title', 'role'),
+    email: text(email, 'sender') || asStrings(contact.emails)[0] || text(record, 'sender', 'email_address'),
+    headline: text(record, 'headline', 'title', 'current_title', 'subject') || text(experience[0] ?? {}, 'title', 'role'),
     summary: text(resume, 'summary') || text(record, 'summary'),
     totalExperienceMonths: experienceMonths,
     totalExperience: experienceMonths ? formatExperienceDuration(experienceMonths) : '',
@@ -170,8 +209,9 @@ export function formatCandidate(record: ApiRecord): CandidateSummary {
     certifications: certifications.map((item) => ({ name: text(item, 'name'), issuer: text(item, 'issuer'), score: text(item, 'score') })),
     interests: asStrings(resume.interests ?? record.interests),
     matches,
+    emailHistory,
     bestMatch,
-    received: text(email, 'date') || text(record, 'created_at', 'received_at'),
+    received: text(email, 'date') || text(record, 'date', 'created_at', 'received_at'),
     file: text(record, 'resume_file'),
     urls,
   }
@@ -183,7 +223,7 @@ export function normalizePage(result: unknown, page: number, size: number) {
   const nested = data.data && typeof data.data === 'object' && !Array.isArray(data.data)
     ? data.data as Record<string, unknown>
     : {}
-  const collection = ['items', 'results', 'records', 'list', 'resumes', 'roles', 'job_roles', 'tasks', 'submissions', 'jobs', 'users', 'audit', 'entries']
+  const collection = ['items', 'results', 'records', 'list', 'resumes', 'roles', 'job_roles', 'tasks', 'submissions', 'jobs', 'users', 'permissions', 'audit', 'entries']
   let rows: unknown = data.items ?? data.results ?? data.records ?? data.list ?? nested.items ?? nested.results ?? data.data
   if (!Array.isArray(rows)) rows = collection.map((key) => data[key] ?? nested[key]).find(Array.isArray) ?? []
   const meta = data.meta && typeof data.meta === 'object' ? data.meta as Record<string, unknown> : {}

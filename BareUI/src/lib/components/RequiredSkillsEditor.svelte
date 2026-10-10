@@ -1,7 +1,13 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { Plus, Trash2 } from '@lucide/svelte'
 
+  let { initialSkills = [] }: { initialSkills?: { name: string; weight: number }[] } = $props()
   let skills = $state([{ name: '', weight: '1' }])
+
+  onMount(() => {
+    if (initialSkills.length) skills = initialSkills.map((skill) => ({ name: skill.name, weight: String(skill.weight) }))
+  })
 
   function addSkill() {
     skills = [...skills, { name: '', weight: '1' }]

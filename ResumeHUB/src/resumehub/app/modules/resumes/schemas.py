@@ -78,6 +78,7 @@ class ResumeBody(Loose):
 
 
 class ResumeDoc(Loose):
+    status: str | None = None
     email: EmailMeta | None = None
     body: str | None = None
     contact: Contact | None = None

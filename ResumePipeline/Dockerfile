@@ -36,10 +36,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --system \
-        --uid 998 \
-        --no-create-home \
-        --shell /usr/sbin/nologin \
-        hub \
+    --uid 998 \
+    --no-create-home \
+    --shell /usr/sbin/nologin \
+    hub \
     && chown -R hub:hub /srv
 
 

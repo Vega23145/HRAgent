@@ -1,10 +1,19 @@
 """Smoke tests that need no database (the lifespan, and so Mongo, is not started)."""
+import asyncio
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+
 import pytest
+from starlette.requests import Request
 from fastapi.testclient import TestClient
 
 from resumehub.app.core.config import Settings
+from resumehub.app.core.deps import Principal
 from resumehub.app.core.loader import discover
 from resumehub.app.main import create_app
+from resumehub.app.modules.resumes import router as resumes_router
+from resumehub.app.modules.resumes.router import _summary
 
 
 @pytest.fixture(scope="module")
@@ -48,6 +57,58 @@ def test_protected_routes_require_auth(client, path):
 def test_bad_token_is_rejected(client):
     r = client.get("/api/v1/resumes", headers={"Authorization": "Bearer nope"})
     assert r.status_code == 401
+
+
+def test_resume_summary_includes_candidate_details_and_matches():
+    doc = {
+        "_id": "resume-1234",
+        "status": "rejected",
+        "email_history": [
+            {"action": "interview", "sent_at": "2026-10-09T12:00:00Z", "status": "sent", "subject": "Private"}
+        ],
+        "resume": {
+            "name": "Candidate",
+            "skills": [{"category": "Languages", "items": ["Python"]}],
+            "experience": [{"title": "Engineer", "company": "Example"}],
+        },
+        "match": {"backend-engineer": {"score": 87, "matched_skills": ["Python"]}},
+    }
+
+    summary = _summary(doc, pii=False)
+
+    assert summary["resume"]["skills"] == doc["resume"]["skills"]
+    assert summary["resume"]["experience"] == doc["resume"]["experience"]
+    assert summary["status"] == "rejected"
+    assert summary["match"] == doc["match"]
+    assert summary["scores"] == {"backend-engineer": 87}
+    assert summary["email_history"] == [
+        {"action": "interview", "sent_at": "2026-10-09T12:00:00Z", "status": "sent", "role_id": None, "task_id": None}
+    ]
+
+
+def test_discard_resume_removes_linked_submissions_and_file(monkeypatch, tmp_path):
+    resume_file = tmp_path / "candidate.pdf"
+    resume_file.write_bytes(b"resume")
+    resume_collection = SimpleNamespace(
+        find_one=AsyncMock(return_value={"resume_file": resume_file.name}),
+        delete_one=AsyncMock(return_value=SimpleNamespace(deleted_count=1)),
+    )
+    submissions = SimpleNamespace(delete_many=AsyncMock(return_value=SimpleNamespace(deleted_count=2)))
+    monkeypatch.setattr(resumes_router.db, "resumes", lambda: resume_collection)
+    monkeypatch.setattr(resumes_router.db, "get_db", lambda: {"task_submissions": submissions})
+    monkeypatch.setattr(resumes_router, "get_settings", lambda: SimpleNamespace(resume_files_dir=str(tmp_path)))
+    audit = AsyncMock()
+    monkeypatch.setattr(resumes_router, "audit", audit)
+    request = Request({"type": "http", "method": "DELETE", "path": "/api/v1/resumes/resume-1234"})
+    actor = Principal(id="user-1", email="user@example.com", full_name=None, roles=[])
+
+    response = asyncio.run(resumes_router.delete_resume("resume-1234", request, actor))
+
+    assert response.status_code == 204
+    resume_collection.delete_one.assert_awaited_once_with({"_id": "resume-1234"})
+    submissions.delete_many.assert_awaited_once_with({"candidate_id": "resume-1234"})
+    assert not Path(resume_file).exists()
+    assert audit.await_args.args[4] == {"task_submissions_deleted": 2}
 
 
 def test_admin_ui_served_with_csp(client):

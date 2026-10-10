@@ -73,4 +73,3 @@ services:
 
 volumes:
   hragent_mongo_data:
-    external: true

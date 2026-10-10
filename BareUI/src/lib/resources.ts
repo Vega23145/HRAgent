@@ -17,6 +17,7 @@ export const resources: ResourceDefinition[] = [
     ],
     filters: [
       { name: 'skill', label: 'Skill' }, { name: 'role', label: 'Role' },
+      { name: 'status', label: 'Status', type: 'select', options: ['rejected'] },
       { name: 'min_score', label: 'Min score', type: 'number' },
       { name: 'has_match', label: 'Match', type: 'select', options: ['true', 'false'] },
       { name: 'sort', label: 'Sort', type: 'select', options: ['_id', 'name', '-name', 'score', '-score'] },
@@ -122,10 +123,9 @@ export const navigation = [
   { label: 'Matching', icon: Activity, resourceId: 'matching' },
   { label: 'Tasks', icon: ClipboardList, resourceId: 'tasks' },
   { label: 'Submissions', icon: ClipboardList, resourceId: 'submissions' },
-  { label: 'Email jobs', icon: Mail, resourceId: 'email-jobs' },
+  { label: 'Email agent', icon: Mail, resourceId: 'email-agent' },
   { label: 'Users', icon: Users, resourceId: 'users' },
   { label: 'Access roles', icon: ShieldCheck, resourceId: 'access-roles' },
   { label: 'Audit log', icon: ShieldCheck, resourceId: 'audit' },
   { label: 'Permissions', icon: ShieldCheck, resourceId: 'permissions' },
-  { label: 'Email templates', icon: Mail, resourceId: 'email-templates' },
 ] as const
